@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Desa</title>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --hijau:#1a6b3c; --hijau-muda:#2d9157; --hijau-terang:#4CAF50;
+    --emas:#c9951a; --emas-muda:#f0b429;
+    --putih:#fafaf8; --abu:#f0efec; --teks:#1c2b1e; --teks-abu:#5a6b5c;
+    --shadow:0 4px 24px rgba(26,107,60,0.12);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--putih);color:var(--teks)}
+
+  /* TOPBAR */
+  .topbar{background:var(--hijau);color:#fff;font-size:12px;padding:6px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+  .topbar a{color:#aee8c0;text-decoration:none;margin-left:12px}
+
+  /* HEADER */
+  header{background:#fff;border-bottom:2px solid var(--hijau-muda);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
+  .logo-box{width:56px;height:56px;background:linear-gradient(135deg,var(--hijau),var(--hijau-muda));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;border:3px solid var(--emas)}
+  .header-text h1{font-family:'Lora',serif;font-size:19px;color:var(--hijau);font-weight:700}
+  .header-text p{font-size:11px;color:var(--teks-abu)}
+
+  /* HAMBURGER */
+  .hamburger{display:none;margin-left:auto;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:6px}
+  .hamburger span{width:24px;height:2px;background:var(--teks);border-radius:2px;display:block;transition:.3s}
+  .hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+  .hamburger.open span:nth-child(2){opacity:0}
+  .hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
+  nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  nav button{background:none;border:none;padding:8px 12px;font-family:inherit;font-size:13px;font-weight:500;color:var(--teks);cursor:pointer;border-radius:8px;transition:all .2s}
+  nav button:hover,nav button.active{background:var(--hijau);color:#fff}
+  .admin-btn{background:var(--emas)!important;color:#fff!important;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700}
+
+  /* MOBILE NAV */
+  .mobile-nav{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:200}
+  .mobile-nav.show{display:flex}
+  .mobile-nav-inner{background:#fff;width:280px;padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+  .mobile-nav-inner .nav-title{font-size:12px;font-weight:700;color:var(--teks-abu);text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px}
+  .mobile-nav-inner button{background:none;border:none;padding:12px 14px;font-family:inherit;font-size:15px;font-weight:500;color:var(--teks);cursor:pointer;border-radius:8px;text-align:left;transition:.2s}
+  .mobile-nav-inner button:hover{background:var(--abu)}
+  .mobile-nav-inner .admin-btn{background:var(--emas)!important;color:#fff!important;margin-top:8px;font-weight:700}
+  .close-nav{font-size:20px;background:none;border:none;cursor:pointer;align-self:flex-end;color:#888;margin-bottom:8px}
+
+  @media(max-width:800px){
+    nav{display:none}
+    .hamburger{display:flex}
+  }
+
+  /* LOADING */
+  .loading{text-align:center;padding:60px;color:var(--teks-abu);font-size:15px}
+  .spinner{width:36px;height:36px;border:3px solid #e8ede8;border-top-color:var(--hijau);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* PAGE */
+  .page{display:none}.page.active{display:block}
+
+  /* HERO */
+  .hero{position:relative;background:linear-gradient(135deg,#0d3d21,#1a6b3c 50%,#2d9157);min-height:460px;display:flex;align-items:center;overflow:hidden;padding:50px 24px}
+  .hero-content{position:relative;max-width:600px}
+  .hero-badge{display:inline-block;background:rgba(201,149,26,.2);border:1px solid var(--emas);color:var(--emas-muda);padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:14px;letter-spacing:1px}
+  .hero h2{font-family:'Lora',serif;font-size:42px;color:#fff;line-height:1.1;margin-bottom:14px}
+  .hero p{color:#aee8c0;font-size:15px;line-height:1.6;margin-bottom:28px}
+  .hero-btns{display:flex;gap:10px;flex-wrap:wrap}
+  .btn-primary{background:var(--emas);color:#fff;padding:11px 24px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+  .btn-primary:hover{background:var(--emas-muda);transform:translateY(-2px)}
+  .btn-outline{background:transparent;color:#fff;padding:11px 24px;border:2px solid rgba(255,255,255,.4);border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+  .btn-outline:hover{border-color:#fff;background:rgba(255,255,255,.1)}
+  .hero-stats{position:absolute;right:24px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px}
+  @media(max-width:800px){.hero-stats{display:none}.hero h2{font-size:30px}}
+  .stat-card{background:rgba(255,255,255,.1);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 18px;text-align:center;min-width:120px}
+  .stat-card .num{font-family:'Lora',serif;font-size:28px;color:#fff;font-weight:700}
+  .stat-card .label{font-size:11px;color:#aee8c0;margin-top:2px}
+
+  /* SECTIONS */
+  .section{padding:52px 24px;max-width:1100px;margin:0 auto}
+  .section-title{font-family:'Lora',serif;font-size:28px;color:var(--hijau);margin-bottom:6px}
+  .section-sub{color:var(--teks-abu);font-size:14px;margin-bottom:32px}
+  .divider{width:56px;height:4px;background:var(--emas);border-radius:2px;margin-bottom:10px}
+
+  /* CARDS */
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px}
+  .card{background:#fff;border-radius:14px;border:1px solid #e8ede8;padding:22px;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+  .card:hover{transform:translateY(-3px);box-shadow:var(--shadow);border-color:var(--hijau-muda)}
+  .card-icon{font-size:32px;margin-bottom:10px}
+  .card h3{font-family:'Lora',serif;font-size:17px;margin-bottom:6px;color:var(--hijau)}
+  .card p{font-size:13px;color:var(--teks-abu);line-height:1.6}
+
+  /* BERITA */
+  .berita-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:20px}
+  .berita-card{background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e8ede8;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+  .berita-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .berita-img{height:160px;background:linear-gradient(135deg,var(--hijau),var(--hijau-muda));display:flex;align-items:center;justify-content:center;font-size:48px}
+  .berita-body{padding:16px}
+  .berita-body .kat{font-size:11px;font-weight:700;color:var(--emas);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .berita-body h3{font-family:'Lora',serif;font-size:16px;margin-bottom:6px;line-height:1.4}
+  .berita-body p{font-size:13px;color:var(--teks-abu);line-height:1.5}
+  .berita-body .meta{font-size:12px;color:#aaa;margin-top:8px}
+
+  /* INFOGRAFIS */
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+  .info-box{background:#fff;border-radius:14px;padding:22px;text-align:center;border:1px solid #e8ede8;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:.3s}
+  .info-box:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .info-box .angka{font-family:'Lora',serif;font-size:34px;font-weight:700;color:var(--hijau)}
+  .info-box .satuan{font-size:13px;color:var(--teks-abu);margin-top:4px}
+  .info-box .ikon{font-size:28px;margin-bottom:8px}
+
+  /* IDM */
+  .idm-wrapper{background:linear-gradient(135deg,var(--hijau),var(--hijau-muda));border-radius:14px;padding:28px;color:#fff;text-align:center;margin-bottom:28px}
+  .idm-wrapper .score{font-family:'Lora',serif;font-size:64px;font-weight:700}
+  .progress-bar-wrap{background:rgba(0,0,0,.2);border-radius:8px;height:10px;margin:14px 0}
+  .progress-bar{background:var(--emas-muda);border-radius:8px;height:10px;transition:width .8s}
+  .idm-detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:600px){.idm-detail-grid{grid-template-columns:1fr}}
+  .idm-item{background:rgba(255,255,255,.12);border-radius:10px;padding:14px;text-align:center}
+  .idm-item .val{font-size:26px;font-weight:700}
+  .idm-item .lbl{font-size:12px;opacity:.8;margin-top:3px}
+
+  /* LAYANAN */
+  .layanan-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .layanan-card{background:#fff;border-radius:12px;padding:20px;border:1px solid #e8ede8;text-align:center;transition:.3s;cursor:pointer}
+  .layanan-card:hover{background:var(--hijau);color:#fff;transform:translateY(-3px);box-shadow:var(--shadow)}
+  .layanan-card:hover .lcard-sub{color:#aee8c0}
+  .layanan-card .lcard-icon{font-size:36px;margin-bottom:10px}
+  .layanan-card .lcard-title{font-weight:700;font-size:14px;margin-bottom:3px}
+  .layanan-card .lcard-sub{font-size:12px;color:var(--teks-abu)}
+
+  /* PROFIL */
+  .profil-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+  @media(max-width:700px){.profil-grid{grid-template-columns:1fr}}
+  .profil-box{background:#fff;border-radius:14px;padding:24px;border:1px solid #e8ede8;box-shadow:var(--shadow);margin-bottom:20px}
+  .profil-box h3{font-family:'Lora',serif;font-size:18px;color:var(--hijau);margin-bottom:14px}
+  .profil-table{width:100%;border-collapse:collapse}
+  .profil-table td{padding:9px 0;border-bottom:1px solid #f0efec;font-size:13px}
+  .profil-table td:first-child{color:var(--teks-abu);width:45%;font-weight:500}
+
+  /* ORG */
+  .org-chart{display:flex;flex-direction:column;align-items:center;gap:0}
+  .org-level{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+  .org-node{background:var(--hijau);color:#fff;padding:10px 16px;border-radius:8px;text-align:center;font-size:12px;font-weight:600;min-width:130px;box-shadow:0 4px 10px rgba(26,107,60,.2)}
+  .org-node.bpd{background:var(--emas)}
+  .org-node small{display:block;font-weight:400;font-size:11px;opacity:.85;margin-top:2px}
+  .org-connector{width:2px;height:24px;background:var(--hijau-muda);margin:0 auto}
+
+  /* FORM */
+  .form-group{margin-bottom:14px}
+  .form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--teks-abu)}
+  .form-group input,.form-group textarea,.form-group select{width:100%;padding:9px 12px;border:1.5px solid #dde8dd;border-radius:8px;font-family:inherit;font-size:14px;background:#fff;transition:border .2s;outline:none}
+  .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--hijau-muda)}
+  .btn-submit{background:var(--hijau);color:#fff;padding:10px 24px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.2s}
+  .btn-submit:hover{background:var(--hijau-muda)}
+
+  /* ANNOUNCEMENT */
+  .ann-bar{background:linear-gradient(90deg,var(--hijau),var(--hijau-muda));color:#fff;padding:10px 24px;display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
+  .ann-bar .badge{background:var(--emas);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;flex-shrink:0}
+
+  /* ADMIN */
+  .admin-grid{display:grid;grid-template-columns:220px 1fr;gap:0;min-height:560px}
+  @media(max-width:700px){.admin-grid{grid-template-columns:1fr}}
+  .admin-sidebar{background:var(--hijau);padding:20px 14px;border-radius:14px 0 0 14px}
+  @media(max-width:700px){.admin-sidebar{border-radius:14px 14px 0 0}}
+  .admin-sidebar h3{color:#aee8c0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:16px 0 4px}
+  .admin-sidebar h3:first-child{margin-top:0}
+  .admin-menu-item{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:.2s;margin-bottom:2px}
+  .admin-menu-item:hover,.admin-menu-item.active{background:rgba(255,255,255,.15)}
+  .admin-content{background:#fff;padding:24px;border-radius:0 14px 14px 0;border:1px solid #e8ede8;border-left:none}
+  @media(max-width:700px){.admin-content{border-radius:0 0 14px 14px;border-left:1px solid #e8ede8;border-top:none}}
+  .admin-content h2{font-family:'Lora',serif;font-size:20px;color:var(--hijau);margin-bottom:16px}
+  .table-admin{width:100%;border-collapse:collapse;font-size:13px}
+  .table-admin th{background:var(--abu);padding:9px 12px;text-align:left;font-weight:600;color:var(--teks-abu)}
+  .table-admin td{padding:9px 12px;border-bottom:1px solid #f0efec}
+  .table-admin tr:hover td{background:#f9fdf9}
+  .badge-status{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+  .badge-aktif{background:#e8f5e9;color:var(--hijau-muda)}
+  .badge-draft{background:#fff8e1;color:#e65100}
+  .action-btn{padding:4px 9px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;font-weight:600;border:none;margin-right:3px}
+  .edit-btn{background:#e3f2fd;color:#1565c0}
+  .delete-btn{background:#ffebee;color:#c62828}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto}
+  .modal h3{font-family:'Lora',serif;font-size:18px;color:var(--hijau);margin-bottom:16px}
+  .modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:#aaa}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--hijau);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:.3s;z-index:9999}
+  .toast.show{transform:translateY(0);opacity:1}
+
+  /* FOOTER */
+  footer{background:#1c2b1e;color:#aaa;padding:36px 24px 16px}
+  .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:32px;max-width:1100px;margin:0 auto}
+  @media(max-width:700px){.footer-grid{grid-template-columns:1fr;gap:20px}}
+  .footer-col h4{color:#fff;font-family:'Lora',serif;font-size:15px;margin-bottom:12px}
+  .footer-col p,.footer-col a{font-size:13px;line-height:1.8;color:#aaa;text-decoration:none;display:block}
+  .footer-col a:hover{color:var(--hijau-terang)}
+  .footer-bottom{border-top:1px solid #333;margin-top:28px;padding-top:14px;text-align:center;font-size:12px;max-width:1100px;margin-left:auto;margin-right:auto}
+
+  /* PENGADUAN LIST */
+  .adu-item{border:1px solid #e8ede8;border-radius:10px;padding:12px;margin-bottom:10px}
+  .adu-item .adu-judul{font-weight:600;font-size:14px}
+  .adu-item .adu-meta{font-size:12px;color:var(--teks-abu);margin-top:3px}
+  .adu-item .adu-isi{font-size:13px;margin-top:6px}
+</style>
+</head>
+<body>
+
+<!-- CONFIG: Ganti dengan data Supabase Anda -->
+<script>
+  // ⚠️ GANTI 2 BARIS INI DENGAN DATA DARI SUPABASE ANDA
+  const SUPABASE_URL = 'https://wilrifqjobpvxjdzkuhd.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_NlAnZ3kSQdYovgkQaP4VyA_kna5auF0
+';
+
+  // Slug desa untuk website ini (sesuai database)
+  const DESA_SLUG = 'kalumpangloe';
+</script>
+
+<div class="topbar">
+  <span id="topbar-nama">🌿 Website Resmi Desa — Memuat...</span>
+  <div id="topbar-kontak"></div>
+</div>
+
+<header>
+  <div class="logo-box">🌾</div>
+  <div class="header-text">
+    <h1 id="header-nama">Memuat...</h1>
+    <p id="header-sub">Memuat data desa...</p>
+  </div>
+  <nav id="desktop-nav">
+    <button class="active" onclick="showPage('beranda',this)">🏠 Beranda</button>
+    <button onclick="showPage('profil',this)">📋 Profil</button>
+    <button onclick="showPage('infografis',this)">📊 Infografis</button>
+    <button onclick="showPage('berita',this)">📰 Berita</button>
+    <button onclick="showPage('idm',this)">🏆 IDM</button>
+    <button onclick="showPage('layanan',this)">⚙️ Layanan</button>
+    <button onclick="showPage('pengaduan',this)">📢 Pengaduan</button>
+    <button class="admin-btn" onclick="showPage('admin',this)">🔐 Admin</button>
+  </nav>
+  <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav" id="mobile-nav" onclick="closeMobileNav()">
+  <div class="mobile-nav-inner" onclick="event.stopPropagation()">
+    <button class="close-nav" onclick="closeMobileNav()">✕</button>
+    <span class="nav-title">Menu</span>
+    <button onclick="showPage('beranda',null);closeMobileNav()">🏠 Beranda</button>
+    <button onclick="showPage('profil',null);closeMobileNav()">📋 Profil Desa</button>
+    <button onclick="showPage('infografis',null);closeMobileNav()">📊 Infografis</button>
+    <button onclick="showPage('berita',null);closeMobileNav()">📰 Berita</button>
+    <button onclick="showPage('idm',null);closeMobileNav()">🏆 IDM</button>
+    <button onclick="showPage('layanan',null);closeMobileNav()">⚙️ Layanan</button>
+    <button onclick="showPage('pengaduan',null);closeMobileNav()">📢 Pengaduan</button>
+    <button class="admin-btn" onclick="showPage('admin',null);closeMobileNav()">🔐 Admin Panel</button>
+  </div>
+</div>
+
+<!-- PAGES -->
+<div id="page-beranda" class="page active">
+  <div class="ann-bar"><span class="badge">PENGUMUMAN</span><span id="ann-text">Memuat...</span></div>
+  <div class="hero">
+    <div class="hero-content">
+      <span class="hero-badge" id="hero-badge">🌾 DESA</span>
+      <h2 id="hero-judul">Portal Resmi Pemerintahan Desa</h2>
+      <p>Melalui website ini Anda dapat menemukan informasi tentang desa kami — pemerintahan, penduduk, potensi, dan berita terkini.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="showPage('profil',null)">Lihat Profil Desa</button>
+        <button class="btn-outline" onclick="showPage('layanan',null)">Akses Layanan</button>
+      </div>
+    </div>
+    <div class="hero-stats" id="hero-stats"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Potensi Desa</h2>
+    <p class="section-sub">Keunggulan dan potensi yang dimiliki desa</p>
+    <div class="cards-grid" id="home-potensi"><div class="loading"><div class="spinner"></div>Memuat potensi...</div></div>
+  </div>
+  <div style="background:var(--abu);padding:52px 24px">
+    <div style="max-width:1100px;margin:0 auto">
+      <div class="divider"></div>
+      <h2 class="section-title">Berita Terkini</h2>
+      <p class="section-sub">Informasi dan kegiatan terbaru</p>
+      <div class="berita-grid" id="home-berita"><div class="loading"><div class="spinner"></div>Memuat berita...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-profil" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Profil Desa</h2>
+    <p class="section-sub">Informasi umum dan pemerintahan</p>
+    <div class="profil-grid" id="profil-content"><div class="loading"><div class="spinner"></div>Memuat profil...</div></div>
+  </div>
+</div>
+
+<div id="page-infografis" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Infografis Data Desa</h2>
+    <p class="section-sub">Statistik kependudukan</p>
+    <div class="info-grid" id="infografis-grid"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<div id="page-berita" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Berita & Pengumuman</h2>
+    <p class="section-sub">Informasi terbaru</p>
+    <div class="berita-grid" id="all-berita"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<div id="page-idm" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Indeks Desa Membangun (IDM)</h2>
+    <p class="section-sub">Tingkat perkembangan desa</p>
+    <div id="idm-content"><div class="loading"><div class="spinner"></div></div></div>
+  </div>
+</div>
+
+<div id="page-layanan" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Layanan Publik</h2>
+    <p class="section-sub">Layanan administrasi desa</p>
+    <div class="layanan-grid">
+      <div class="layanan-card"><div class="lcard-icon">📄</div><div class="lcard-title">Surat Keterangan Domisili</div><div class="lcard-sub">KTP, KK, Surat RT</div></div>
+      <div class="layanan-card"><div class="lcard-icon">💼</div><div class="lcard-title">Surat Keterangan Usaha</div><div class="lcard-sub">KTP, KK, Foto Usaha</div></div>
+      <div class="layanan-card"><div class="lcard-icon">🤝</div><div class="lcard-title">Surat Tidak Mampu</div><div class="lcard-sub">KTP, KK, Surat RT/RW</div></div>
+      <div class="layanan-card"><div class="lcard-icon">🪪</div><div class="lcard-title">Pengantar KTP/KK</div><div class="lcard-sub">KK, Formulir F1.01</div></div>
+      <div class="layanan-card"><div class="lcard-icon">👶</div><div class="lcard-title">Surat Kelahiran</div><div class="lcard-sub">KTP Ortu, Surat Bidan</div></div>
+      <div class="layanan-card"><div class="lcard-icon">⚰️</div><div class="lcard-title">Surat Kematian</div><div class="lcard-sub">KTP Almarhum, Surat Dokter</div></div>
+    </div>
+    <div style="margin-top:40px">
+      <div class="divider"></div>
+      <h3 style="font-family:Lora,serif;font-size:20px;color:var(--hijau);margin-bottom:6px">Ajukan Permohonan</h3>
+      <p style="color:var(--teks-abu);font-size:14px;margin-bottom:20px">Isi formulir untuk mengajukan permohonan layanan</p>
+      <div class="profil-box" style="max-width:520px">
+        <div class="form-group"><label>Nama Lengkap</label><input id="layan-nama" placeholder="Nama lengkap Anda"></div>
+        <div class="form-group"><label>NIK</label><input id="layan-nik" placeholder="16 digit NIK"></div>
+        <div class="form-group"><label>Jenis Layanan</label>
+          <select id="layan-jenis">
+            <option>Surat Keterangan Domisili</option><option>Surat Keterangan Usaha</option>
+            <option>Surat Keterangan Tidak Mampu</option><option>Surat Pengantar KTP</option>
+            <option>Surat Pengantar KK</option><option>Surat Keterangan Kematian</option>
+            <option>Surat Keterangan Kelahiran</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Keterangan</label><textarea id="layan-ket" rows="3" placeholder="Info tambahan..."></textarea></div>
+        <button class="btn-submit" onclick="ajukanLayanan()">📨 Ajukan Permohonan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-pengaduan" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Pengaduan Masyarakat</h2>
+    <p class="section-sub">Sampaikan aspirasi dan keluhan Anda</p>
+    <div class="profil-grid">
+      <div class="profil-box">
+        <h3>📝 Form Pengaduan</h3>
+        <div class="form-group" style="margin-top:14px"><label>Nama</label><input id="adu-nama" placeholder="Nama Anda"></div>
+        <div class="form-group"><label>No. HP</label><input id="adu-hp" placeholder="08xx-xxxx-xxxx"></div>
+        <div class="form-group"><label>Kategori</label>
+          <select id="adu-kategori"><option>Infrastruktur</option><option>Pelayanan Publik</option><option>Lingkungan</option><option>Keamanan</option><option>Sosial</option><option>Lainnya</option></select>
+        </div>
+        <div class="form-group"><label>Judul</label><input id="adu-judul" placeholder="Judul singkat pengaduan"></div>
+        <div class="form-group"><label>Isi Pengaduan</label><textarea id="adu-isi" rows="4" placeholder="Jelaskan secara detail..."></textarea></div>
+        <button class="btn-submit" onclick="kirimPengaduan()">📤 Kirim Pengaduan</button>
+      </div>
+      <div class="profil-box">
+        <h3>📋 Daftar Pengaduan</h3>
+        <div id="pengaduan-list" style="margin-top:12px"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-admin" class="page">
+  <div class="section">
+    <div class="divider"></div>
+    <h2 class="section-title">Panel Admin</h2>
+    <div id="admin-login-wrap">
+      <div class="profil-box" style="max-width:340px">
+        <h3>🔐 Login Admin</h3>
+        <div class="form-group" style="margin-top:14px"><label>Username</label><input id="admin-user" placeholder="Username" value="admin_kalumpangloe"></div>
+        <div class="form-group"><label>Password</label><input type="password" id="admin-pass" placeholder="••••••••" value="desa123"></div>
+        <button class="btn-submit" onclick="adminLogin()">Masuk</button>
+        <p style="font-size:12px;color:var(--teks-abu);margin-top:10px">⚠️ Ganti password setelah pertama login!</p>
+      </div>
+    </div>
+    <div id="admin-panel-wrap" style="display:none">
+      <div class="admin-grid">
+        <div class="admin-sidebar">
+          <h3>Konten</h3>
+          <div class="admin-menu-item active" onclick="adminMenu('berita',this)">📰 Berita</div>
+          <div class="admin-menu-item" onclick="adminMenu('potensi',this)">🌾 Potensi</div>
+          <div class="admin-menu-item" onclick="adminMenu('pengumuman',this)">📣 Pengumuman</div>
+          <h3>Data Desa</h3>
+          <div class="admin-menu-item" onclick="adminMenu('profil-edit',this)">📋 Profil Desa</div>
+          <div class="admin-menu-item" onclick="adminMenu('statistik',this)">📊 Statistik</div>
+          <div class="admin-menu-item" onclick="adminMenu('idm-edit',this)">🏆 IDM</div>
+          <h3>Layanan</h3>
+          <div class="admin-menu-item" onclick="adminMenu('pengaduan-admin',this)">📢 Pengaduan</div>
+          <div class="admin-menu-item" onclick="adminMenu('permohonan',this)">📨 Permohonan</div>
+          <h3 style="cursor:pointer;color:#ff8a80" onclick="adminLogout()">⬅️ Keluar</h3>
+        </div>
+        <div class="admin-content" id="admin-content-area">
+          <div class="loading"><div class="spinner"></div>Pilih menu di kiri...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-col">
+      <h4 id="footer-nama">🌾 Desa</h4>
+      <p id="footer-desc">Website resmi pemerintahan desa.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Navigasi</h4>
+      <a href="#" onclick="showPage('profil',null)">Profil Desa</a>
+      <a href="#" onclick="showPage('berita',null)">Berita</a>
+      <a href="#" onclick="showPage('idm',null)">IDM</a>
+      <a href="#" onclick="showPage('pengaduan',null)">Pengaduan</a>
+    </div>
+    <div class="footer-col">
+      <h4>Kontak</h4>
+      <a id="footer-telp" href="#">📞 -</a>
+      <a id="footer-email" href="#">📧 -</a>
+      <a id="footer-alamat" href="#">📍 -</a>
+      <a href="#">🕐 Senin–Jumat, 08.00–16.00</a>
+    </div>
+  </div>
+  <div class="footer-bottom"><p id="footer-copy">© 2025 Website Resmi Desa</p></div>
+</footer>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// SUPABASE INIT
+// ============================================================
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================
+// LOAD DATA DESA
+// ============================================================
+let PROFIL = null, STATISTIK = null, IDM_DATA = null;
+let adminLoggedIn = false;
+
+async function initDesa() {
+  try {
+    const { data: profil } = await sb.from('profil_desa').select('*').eq('slug', DESA_SLUG).single();
+    PROFIL = profil;
+    if (!profil) { document.body.innerHTML = '<div style="text-align:center;padding:80px;font-size:18px">❌ Desa tidak ditemukan. Periksa DESA_SLUG di config.</div>'; return; }
+
+    // Update UI dengan data profil
+    document.title = `Website Resmi ${profil.nama_desa}`;
+    document.getElementById('topbar-nama').textContent = `🌿 Website Resmi ${profil.nama_desa} — ${profil.kecamatan}, ${profil.kabupaten}`;
+    document.getElementById('topbar-kontak').innerHTML = `📞 <a href="tel:${profil.telepon}">${profil.telepon||'-'}</a> 📧 <a href="mailto:${profil.email}">${profil.email||'-'}</a>`;
+    document.getElementById('header-nama').textContent = profil.nama_desa;
+    document.getElementById('header-sub').textContent = `${profil.kecamatan} • ${profil.kabupaten} • ${profil.provinsi}`;
+    document.getElementById('hero-badge').textContent = `🌾 ${profil.nama_desa.toUpperCase()}`;
+    document.getElementById('hero-judul').textContent = `Portal Resmi ${profil.nama_desa}`;
+    document.getElementById('ann-text').textContent = profil.pengumuman || 'Selamat datang di website resmi desa kami.';
+    document.getElementById('footer-nama').textContent = `🌾 ${profil.nama_desa}`;
+    document.getElementById('footer-desc').textContent = `Website resmi Pemerintahan ${profil.nama_desa}, ${profil.kecamatan}, ${profil.kabupaten}, ${profil.provinsi}.`;
+    document.getElementById('footer-telp').textContent = `📞 ${profil.telepon||'-'}`;
+    document.getElementById('footer-email').textContent = `📧 ${profil.email||'-'}`;
+    document.getElementById('footer-alamat').textContent = `📍 ${profil.alamat||'-'}`;
+    document.getElementById('footer-copy').textContent = `© ${new Date().getFullYear()} Website Resmi ${profil.nama_desa}`;
+
+    // Load statistik & IDM
+    const { data: stat } = await sb.from('statistik_desa').select('*').eq('desa_slug', DESA_SLUG).single();
+    STATISTIK = stat;
+
+    const { data: idm } = await sb.from('idm_desa').select('*').eq('desa_slug', DESA_SLUG).order('tahun', { ascending: false });
+    IDM_DATA = idm;
+
+    // Render hero stats
+    if (stat) {
+      document.getElementById('hero-stats').innerHTML = `
+        <div class="stat-card"><div class="num">${stat.jumlah_penduduk?.toLocaleString()}</div><div class="label">Total Penduduk</div></div>
+        <div class="stat-card"><div class="num">${stat.jumlah_kk}</div><div class="label">Kepala Keluarga</div></div>
+        ${idm?.[0] ? `<div class="stat-card"><div class="num">${idm[0].skor}</div><div class="label">Skor IDM ${idm[0].tahun}</div></div>` : ''}
+      `;
+    }
+
+    // Load berita & potensi untuk beranda
+    await loadHomeBerita();
+    await loadHomePotensi();
+
+  } catch(e) {
+    console.error(e);
+    showToast('⚠️ Gagal terhubung ke database. Periksa konfigurasi Supabase.');
+  }
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'profil') renderProfil();
+  if (id === 'infografis') renderInfografis();
+  if (id === 'berita') loadBerita();
+  if (id === 'idm') renderIDM();
+  if (id === 'pengaduan') loadPengaduan();
+  if (id === 'admin' && adminLoggedIn) adminMenu('berita', document.querySelector('.admin-menu-item'));
+}
+
+function toggleMobileNav() {
+  document.getElementById('mobile-nav').classList.toggle('show');
+  document.getElementById('hamburger-btn').classList.toggle('open');
+}
+function closeMobileNav() {
+  document.getElementById('mobile-nav').classList.remove('show');
+  document.getElementById('hamburger-btn').classList.remove('open');
+}
+
+// ============================================================
+// BERANDA
+// ============================================================
+async function loadHomeBerita() {
+  const { data } = await sb.from('berita').select('*').eq('desa_slug', DESA_SLUG).eq('status', 'aktif').order('created_at', { ascending: false }).limit(3);
+  document.getElementById('home-berita').innerHTML = (data||[]).map(b =>
+    `<div class="berita-card"><div class="berita-img">${b.emoji||'📰'}</div>
+     <div class="berita-body"><div class="kat">${b.kategori||''}</div><h3>${b.judul}</h3>
+     <p>${(b.isi||'').substring(0,100)}...</p>
+     <div class="meta">📅 ${new Date(b.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+     </div></div>`
+  ).join('') || '<p style="color:var(--teks-abu)">Belum ada berita.</p>';
+}
+
+async function loadHomePotensi() {
+  const { data } = await sb.from('potensi_desa').select('*').eq('desa_slug', DESA_SLUG).limit(6);
+  document.getElementById('home-potensi').innerHTML = (data||[]).map(p =>
+    `<div class="card"><div class="card-icon">${p.icon||'🌾'}</div><h3>${p.nama}</h3><p>${p.deskripsi||''}</p></div>`
+  ).join('') || '<p style="color:var(--teks-abu)">Belum ada data potensi.</p>';
+}
+
+// ============================================================
+// PROFIL
+// ============================================================
+async function renderProfil() {
+  if (!PROFIL) return;
+  const p = PROFIL;
+  const { data: aparat } = await sb.from('aparat_desa').select('*').eq('desa_slug', DESA_SLUG).order('urutan');
+  const misi = JSON.parse(p.misi || '[]');
+
+  document.getElementById('profil-content').innerHTML = `
+    <div>
+      <div class="profil-box">
+        <h3>📍 Data Umum</h3>
+        <table class="profil-table">
+          <tr><td>Nama Desa</td><td><b>${p.nama_desa}</b></td></tr>
+          <tr><td>Kecamatan</td><td>${p.kecamatan||'-'}</td></tr>
+          <tr><td>Kabupaten</td><td>${p.kabupaten||'-'}</td></tr>
+          <tr><td>Provinsi</td><td>${p.provinsi||'-'}</td></tr>
+          <tr><td>Luas Wilayah</td><td>${p.luas_wilayah||'-'}</td></tr>
+          <tr><td>Jumlah Dusun</td><td>${p.jumlah_dusun||'-'}</td></tr>
+          <tr><td>Batas Utara</td><td>${p.batas_utara||'-'}</td></tr>
+          <tr><td>Batas Selatan</td><td>${p.batas_selatan||'-'}</td></tr>
+          <tr><td>Kepala Desa</td><td><b>${p.kepala_desa||'-'}</b></td></tr>
+          <tr><td>Sekretaris</td><td>${p.sekretaris_desa||'-'}</td></tr>
+        </table>
+      </div>
+      <div class="profil-box">
+        <h3>🎯 Visi</h3>
+        <p style="font-style:italic;font-size:14px;line-height:1.7">${p.visi||'-'}</p>
+        <h3 style="margin-top:16px">🚀 Misi</h3>
+        <ul style="padding-left:18px;font-size:14px;line-height:2">${misi.map(m=>`<li>${m}</li>`).join('')}</ul>
+      </div>
+    </div>
+    <div>
+      <div class="profil-box">
+        <h3>📜 Sejarah</h3>
+        <p style="font-size:14px;line-height:1.8">${p.sejarah||'Belum ada data sejarah.'}</p>
+      </div>
+      <div class="profil-box">
+        <h3>🏛️ Struktur Organisasi</h3>
+        <div style="margin-top:14px">
+          <div class="org-chart">
+            <div class="org-level">
+              <div class="org-node bpd">BPD<small>Badan Permusyawaratan Desa</small></div>
+              <div class="org-node">${aparat?.[0]?.jabatan||'Kepala Desa'}<small>${aparat?.[0]?.nama||'-'}</small></div>
+            </div>
+            <div class="org-connector"></div>
+            <div class="org-level">
+              ${aparat?.filter(a=>a.jabatan?.includes('Sekretaris')).map(a=>`<div class="org-node" style="background:var(--hijau-muda)">${a.jabatan}<small>${a.nama}</small></div>`).join('')||''}
+            </div>
+            <div class="org-connector"></div>
+            <div class="org-level">
+              ${aparat?.filter(a=>a.jabatan?.includes('Kaur')||a.jabatan?.includes('Kasi')).map(a=>`<div class="org-node" style="background:#388e3c;font-size:12px">${a.jabatan}<small>${a.nama}</small></div>`).join('')||''}
+            </div>
+            <div class="org-connector"></div>
+            <div class="org-level">
+              ${aparat?.filter(a=>a.jabatan?.includes('Dusun')).map(a=>`<div class="org-node" style="background:#43a047;font-size:11px">${a.jabatan}<small>${a.nama}</small></div>`).join('')||''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// INFOGRAFIS
+// ============================================================
+function renderInfografis() {
+  if (!STATISTIK) { document.getElementById('infografis-grid').innerHTML = '<p>Data statistik belum tersedia.</p>'; return; }
+  const s = STATISTIK;
+  document.getElementById('infografis-grid').innerHTML = `
+    <div class="info-box"><div class="ikon">👥</div><div class="angka">${s.jumlah_penduduk?.toLocaleString()}</div><div class="satuan">Total Penduduk</div></div>
+    <div class="info-box"><div class="ikon">👨</div><div class="angka">${s.laki_laki?.toLocaleString()}</div><div class="satuan">Laki-laki</div></div>
+    <div class="info-box"><div class="ikon">👩</div><div class="angka">${s.perempuan?.toLocaleString()}</div><div class="satuan">Perempuan</div></div>
+    <div class="info-box"><div class="ikon">🏠</div><div class="angka">${s.jumlah_kk}</div><div class="satuan">Kepala Keluarga</div></div>
+    <div class="info-box"><div class="ikon">🏡</div><div class="angka">${s.jumlah_rumah}</div><div class="satuan">Jumlah Rumah</div></div>
+    <div class="info-box"><div class="ikon">🗺️</div><div class="angka">${s.luas_ha}</div><div class="satuan">Luas (Ha)</div></div>
+    <div class="info-box"><div class="ikon">🏘️</div><div class="angka">${s.jumlah_rt}</div><div class="satuan">Jumlah RT</div></div>
+    <div class="info-box"><div class="ikon">🏙️</div><div class="angka">${s.jumlah_rw}</div><div class="satuan">Jumlah RW</div></div>`;
+}
+
+// ============================================================
+// BERITA
+// ============================================================
+async function loadBerita() {
+  const { data } = await sb.from('berita').select('*').eq('desa_slug', DESA_SLUG).eq('status','aktif').order('created_at',{ascending:false});
+  document.getElementById('all-berita').innerHTML = (data||[]).map(b =>
+    `<div class="berita-card"><div class="berita-img">${b.emoji||'📰'}</div>
+     <div class="berita-body"><div class="kat">${b.kategori||''}</div><h3>${b.judul}</h3>
+     <p>${b.isi||''}</p>
+     <div class="meta">📅 ${new Date(b.created_at).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})}</div>
+     </div></div>`
+  ).join('') || '<p>Belum ada berita.</p>';
+}
+
+// ============================================================
+// IDM
+// ============================================================
+function renderIDM() {
+  if (!IDM_DATA?.length) { document.getElementById('idm-content').innerHTML = '<p>Data IDM belum tersedia.</p>'; return; }
+  const latest = IDM_DATA[0];
+  document.getElementById('idm-content').innerHTML = `
+    <div class="idm-wrapper">
+      <div class="score">${latest.skor}</div>
+      <div style="font-size:18px;opacity:.9">🌟 ${latest.status} — Tahun ${latest.tahun}</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" style="width:${latest.skor*100}%"></div></div>
+      <div style="font-size:13px;opacity:.7">Skor 0 – 1</div>
+    </div>
+    <div class="idm-detail-grid">
+      <div class="idm-item"><div class="val">${latest.iks}</div><div class="lbl">🏥 Ketahanan Sosial</div></div>
+      <div class="idm-item"><div class="val">${latest.ike}</div><div class="lbl">💰 Ketahanan Ekonomi</div></div>
+      <div class="idm-item"><div class="val">${latest.ikl}</div><div class="lbl">🌿 Ketahanan Lingkungan</div></div>
+    </div>
+    <div style="margin-top:28px">
+      <h3 style="font-family:Lora,serif;font-size:18px;color:var(--hijau);margin-bottom:12px">Riwayat IDM</h3>
+      <table class="table-admin" style="background:#fff;border-radius:10px;overflow:hidden">
+        <thead><tr><th>Tahun</th><th>Skor</th><th>Status</th><th>IKS</th><th>IKE</th><th>IKL</th></tr></thead>
+        <tbody>${IDM_DATA.map(r=>`<tr><td>${r.tahun}</td><td><b>${r.skor}</b></td><td>${r.status}</td><td>${r.iks}</td><td>${r.ike}</td><td>${r.ikl}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+}
+
+// ============================================================
+// PENGADUAN
+// ============================================================
+async function loadPengaduan() {
+  const { data } = await sb.from('pengaduan').select('*').eq('desa_slug', DESA_SLUG).order('created_at',{ascending:false});
+  document.getElementById('pengaduan-list').innerHTML = (data||[]).length ?
+    data.map(p => `<div class="adu-item">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:8px">
+        <div>
+          <div class="adu-judul">${p.judul}</div>
+          <div class="adu-meta">${p.kategori} • ${new Date(p.created_at).toLocaleDateString('id-ID')} • ${p.nama}</div>
+          <div class="adu-isi">${p.isi}</div>
+        </div>
+        <span class="badge-status ${p.status==='Selesai'?'badge-aktif':'badge-draft'}">${p.status}</span>
+      </div>
+    </div>`).join('')
+    : '<p style="color:var(--teks-abu)">Belum ada pengaduan.</p>';
+}
+
+async function kirimPengaduan() {
+  const nama = document.getElementById('adu-nama').value.trim();
+  const judul = document.getElementById('adu-judul').value.trim();
+  const isi = document.getElementById('adu-isi').value.trim();
+  if (!nama || !judul || !isi) { showToast('⚠️ Nama, Judul, dan Isi wajib diisi!'); return; }
+  const { error } = await sb.from('pengaduan').insert({
+    desa_slug: DESA_SLUG, nama,
+    hp: document.getElementById('adu-hp').value,
+    kategori: document.getElementById('adu-kategori').value,
+    judul, isi, status: 'Diterima'
+  });
+  if (error) { showToast('❌ Gagal kirim: ' + error.message); return; }
+  ['adu-nama','adu-hp','adu-judul','adu-isi'].forEach(id => document.getElementById(id).value='');
+  await loadPengaduan();
+  showToast('✅ Pengaduan berhasil dikirim!');
+}
+
+async function ajukanLayanan() {
+  const nama = document.getElementById('layan-nama').value.trim();
+  const nik = document.getElementById('layan-nik').value.trim();
+  if (!nama || !nik) { showToast('⚠️ Nama dan NIK wajib diisi!'); return; }
+  const { error } = await sb.from('permohonan_layanan').insert({
+    desa_slug: DESA_SLUG, nama, nik,
+    jenis_layanan: document.getElementById('layan-jenis').value,
+    keterangan: document.getElementById('layan-ket').value,
+    status: 'Menunggu'
+  });
+  if (error) { showToast('❌ Gagal: ' + error.message); return; }
+  ['layan-nama','layan-nik','layan-ket'].forEach(id => document.getElementById(id).value='');
+  showToast('✅ Permohonan berhasil dikirim!');
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+async function adminLogin() {
+  const username = document.getElementById('admin-user').value;
+  const password = document.getElementById('admin-pass').value;
+  const { data, error } = await sb.from('admin_desa').select('*').eq('desa_slug', DESA_SLUG).eq('username', username).eq('password_hash', password).single();
+  if (data) {
+    adminLoggedIn = true;
+    document.getElementById('admin-login-wrap').style.display = 'none';
+    document.getElementById('admin-panel-wrap').style.display = 'block';
+    adminMenu('berita', document.querySelector('.admin-menu-item'));
+    showToast('✅ Login berhasil! Selamat datang, ' + data.nama_lengkap);
+  } else {
+    showToast('❌ Username atau password salah!');
+  }
+}
+function adminLogout() {
+  adminLoggedIn = false;
+  document.getElementById('admin-login-wrap').style.display = 'block';
+  document.getElementById('admin-panel-wrap').style.display = 'none';
+  showToast('👋 Berhasil keluar');
+}
+
+async function adminMenu(menu, el) {
+  document.querySelectorAll('.admin-menu-item').forEach(m => m.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const c = document.getElementById('admin-content-area');
+  c.innerHTML = '<div class="loading"><div class="spinner"></div>Memuat...</div>';
+
+  if (menu === 'berita') {
+    const { data } = await sb.from('berita').select('*').eq('desa_slug', DESA_SLUG).order('created_at',{ascending:false});
+    c.innerHTML = `<h2>📰 Kelola Berita</h2>
+      <button class="btn-submit" style="margin-bottom:14px" onclick="modalTambahBerita()">+ Tambah Berita</button>
+      <table class="table-admin"><thead><tr><th>Judul</th><th>Kategori</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>${(data||[]).map(b=>`<tr>
+        <td>${b.emoji} ${b.judul}</td><td>${b.kategori}</td>
+        <td><span class="badge-status ${b.status==='aktif'?'badge-aktif':'badge-draft'}">${b.status}</span></td>
+        <td><button class="action-btn edit-btn" onclick="editBerita('${b.id}','${b.judul.replace(/'/g,"\\'")}','${b.status}')">✏️ Edit</button>
+            <button class="action-btn delete-btn" onclick="hapusBerita('${b.id}')">🗑️</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+  else if (menu === 'potensi') {
+    const { data } = await sb.from('potensi_desa').select('*').eq('desa_slug', DESA_SLUG);
+    c.innerHTML = `<h2>🌾 Kelola Potensi</h2>
+      <button class="btn-submit" style="margin-bottom:14px" onclick="modalTambahPotensi()">+ Tambah Potensi</button>
+      <table class="table-admin"><thead><tr><th>Icon</th><th>Nama</th><th>Deskripsi</th><th>Aksi</th></tr></thead>
+      <tbody>${(data||[]).map(p=>`<tr>
+        <td>${p.icon}</td><td>${p.nama}</td><td>${p.deskripsi||''}</td>
+        <td><button class="action-btn delete-btn" onclick="hapusPotensi('${p.id}')">🗑️</button></td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+  else if (menu === 'pengumuman') {
+    c.innerHTML = `<h2>📣 Pengumuman</h2>
+      <div class="form-group"><label>Teks Pengumuman</label><textarea id="peng-text" rows="4">${PROFIL?.pengumuman||''}</textarea></div>
+      <button class="btn-submit" onclick="simpanPengumuman()">💾 Simpan</button>`;
+  }
+  else if (menu === 'profil-edit') {
+    const p = PROFIL;
+    c.innerHTML = `<h2>📋 Edit Profil Desa</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Kepala Desa</label><input id="pe-kades" value="${p?.kepala_desa||''}"></div>
+        <div class="form-group"><label>Sekretaris</label><input id="pe-sekdes" value="${p?.sekretaris_desa||''}"></div>
+        <div class="form-group"><label>Telepon</label><input id="pe-telp" value="${p?.telepon||''}"></div>
+        <div class="form-group"><label>Email</label><input id="pe-email" value="${p?.email||''}"></div>
+      </div>
+      <div class="form-group"><label>Visi</label><textarea id="pe-visi" rows="3">${p?.visi||''}</textarea></div>
+      <div class="form-group"><label>Sejarah</label><textarea id="pe-sejarah" rows="4">${p?.sejarah||''}</textarea></div>
+      <button class="btn-submit" onclick="simpanProfil()">💾 Simpan Profil</button>`;
+  }
+  else if (menu === 'statistik') {
+    const s = STATISTIK;
+    c.innerHTML = `<h2>📊 Edit Statistik</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Jumlah Penduduk</label><input type="number" id="se-pend" value="${s?.jumlah_penduduk||0}"></div>
+        <div class="form-group"><label>Laki-laki</label><input type="number" id="se-laki" value="${s?.laki_laki||0}"></div>
+        <div class="form-group"><label>Perempuan</label><input type="number" id="se-pere" value="${s?.perempuan||0}"></div>
+        <div class="form-group"><label>Jumlah KK</label><input type="number" id="se-kk" value="${s?.jumlah_kk||0}"></div>
+        <div class="form-group"><label>Jumlah Rumah</label><input type="number" id="se-rumah" value="${s?.jumlah_rumah||0}"></div>
+        <div class="form-group"><label>Jumlah RT</label><input type="number" id="se-rt" value="${s?.jumlah_rt||0}"></div>
+      </div>
+      <button class="btn-submit" onclick="simpanStatistik()">💾 Simpan</button>`;
+  }
+  else if (menu === 'idm-edit') {
+    const latest = IDM_DATA?.[0];
+    c.innerHTML = `<h2>🏆 Edit IDM Terkini</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label>Tahun</label><input type="number" id="ie-tahun" value="${latest?.tahun||new Date().getFullYear()}"></div>
+        <div class="form-group"><label>Skor IDM</label><input type="number" step="0.001" id="ie-skor" value="${latest?.skor||0}"></div>
+        <div class="form-group"><label>Status</label><input id="ie-status" value="${latest?.status||''}"></div>
+        <div class="form-group"><label>IKS (Sosial)</label><input type="number" step="0.001" id="ie-iks" value="${latest?.iks||0}"></div>
+        <div class="form-group"><label>IKE (Ekonomi)</label><input type="number" step="0.001" id="ie-ike" value="${latest?.ike||0}"></div>
+        <div class="form-group"><label>IKL (Lingkungan)</label><input type="number" step="0.001" id="ie-ikl" value="${latest?.ikl||0}"></div>
+      </div>
+      <button class="btn-submit" onclick="simpanIDM()">💾 Simpan IDM</button>`;
+  }
+  else if (menu === 'pengaduan-admin') {
+    const { data } = await sb.from('pengaduan').select('*').eq('desa_slug', DESA_SLUG).order('created_at',{ascending:false});
+    c.innerHTML = `<h2>📢 Daftar Pengaduan</h2>
+      <table class="table-admin"><thead><tr><th>Nama</th><th>Kategori</th><th>Judul</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>${(data||[]).map(p=>`<tr>
+        <td>${p.nama}</td><td>${p.kategori}</td><td>${p.judul}</td>
+        <td>${new Date(p.created_at).toLocaleDateString('id-ID')}</td>
+        <td><span class="badge-status ${p.status==='Selesai'?'badge-aktif':'badge-draft'}">${p.status}</span></td>
+        <td>
+          <button class="action-btn edit-btn" onclick="updatePengaduan('${p.id}','Diproses')">⚙️</button>
+          <button class="action-btn" style="background:#e8f5e9;color:green" onclick="updatePengaduan('${p.id}','Selesai')">✅</button>
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+  }
+  else if (menu === 'permohonan') {
+    const { data } = await sb.from('permohonan_layanan').select('*').eq('desa_slug', DESA_SLUG).order('created_at',{ascending:false});
+    c.innerHTML = `<h2>📨 Permohonan Layanan</h2>
+      <table class="table-admin"><thead><tr><th>Nama</th><th>NIK</th><th>Jenis Layanan</th><th>Tanggal</th><th>Status</th></tr></thead>
+      <tbody>${(data||[]).length ? data.map(p=>`<tr>
+        <td>${p.nama}</td><td>${p.nik}</td><td>${p.jenis_layanan}</td>
+        <td>${new Date(p.created_at).toLocaleDateString('id-ID')}</td>
+        <td><span class="badge-status badge-draft">${p.status}</span></td>
+      </tr>`).join('') : '<tr><td colspan="5" style="text-align:center;color:#aaa;padding:20px">Belum ada permohonan</td></tr>'}</tbody></table>`;
+  }
+}
+
+// ADMIN ACTIONS
+function modalTambahBerita() {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>📰 Tambah Berita</h3>
+    <div class="form-group"><label>Judul</label><input id="nb-judul"></div>
+    <div class="form-group"><label>Kategori</label>
+      <select id="nb-kat"><option>Pemerintahan</option><option>Sosial</option><option>Ekonomi</option><option>Infrastruktur</option><option>Kesehatan</option><option>Lingkungan</option></select>
+    </div>
+    <div class="form-group"><label>Emoji</label><input id="nb-emoji" value="📰" style="width:80px"></div>
+    <div class="form-group"><label>Isi Berita</label><textarea id="nb-isi" rows="4"></textarea></div>
+    <button class="btn-submit" onclick="simpanBeritaBaru()">💾 Simpan</button>`;
+  showModal();
+}
+async function simpanBeritaBaru() {
+  const judul = document.getElementById('nb-judul').value.trim();
+  const isi = document.getElementById('nb-isi').value.trim();
+  if (!judul||!isi) { showToast('⚠️ Wajib diisi!'); return; }
+  const { error } = await sb.from('berita').insert({ desa_slug:DESA_SLUG, judul, isi, kategori:document.getElementById('nb-kat').value, emoji:document.getElementById('nb-emoji').value, status:'aktif' });
+  if (error) { showToast('❌ '+error.message); return; }
+  closeModal(); adminMenu('berita',null); showToast('✅ Berita ditambahkan!');
+}
+async function hapusBerita(id) {
+  if (!confirm('Hapus berita ini?')) return;
+  await sb.from('berita').delete().eq('id',id);
+  adminMenu('berita',null); showToast('🗑️ Berita dihapus');
+}
+function editBerita(id, judul, status) {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>✏️ Edit Berita</h3>
+    <div class="form-group"><label>Judul</label><input id="eb-judul" value="${judul}"></div>
+    <div class="form-group"><label>Status</label>
+      <select id="eb-status"><option ${status==='aktif'?'selected':''}>aktif</option><option ${status==='draft'?'selected':''}>draft</option></select>
+    </div>
+    <button class="btn-submit" onclick="updateBerita('${id}')">💾 Update</button>`;
+  showModal();
+}
+async function updateBerita(id) {
+  await sb.from('berita').update({ judul:document.getElementById('eb-judul').value, status:document.getElementById('eb-status').value }).eq('id',id);
+  closeModal(); adminMenu('berita',null); showToast('✅ Berita diperbarui!');
+}
+function modalTambahPotensi() {
+  document.getElementById('modal-content').innerHTML = `
+    <h3>🌾 Tambah Potensi</h3>
+    <div class="form-group"><label>Nama</label><input id="np-nama"></div>
+    <div class="form-group"><label>Deskripsi</label><textarea id="np-des" rows="3"></textarea></div>
+    <div class="form-group"><label>Icon Emoji</label><input id="np-icon" value="🌱" style="width:80px"></div>
+    <button class="btn-submit" onclick="simpanPotensi()">💾 Simpan</button>`;
+  showModal();
+}
+async function simpanPotensi() {
+  const nama = document.getElementById('np-nama').value.trim();
+  if (!nama) { showToast('⚠️ Nama wajib diisi!'); return; }
+  await sb.from('potensi_desa').insert({ desa_slug:DESA_SLUG, nama, deskripsi:document.getElementById('np-des').value, icon:document.getElementById('np-icon').value });
+  closeModal(); adminMenu('potensi',null); showToast('✅ Potensi ditambahkan!');
+}
+async function hapusPotensi(id) {
+  if (!confirm('Hapus potensi ini?')) return;
+  await sb.from('potensi_desa').delete().eq('id',id);
+  adminMenu('potensi',null); showToast('🗑️ Dihapus');
+}
+async function simpanPengumuman() {
+  const teks = document.getElementById('peng-text').value;
+  await sb.from('profil_desa').update({ pengumuman:teks }).eq('slug',DESA_SLUG);
+  PROFIL.pengumuman = teks;
+  document.getElementById('ann-text').textContent = teks;
+  showToast('✅ Pengumuman disimpan!');
+}
+async function simpanProfil() {
+  const update = { kepala_desa:document.getElementById('pe-kades').value, sekretaris_desa:document.getElementById('pe-sekdes').value, telepon:document.getElementById('pe-telp').value, email:document.getElementById('pe-email').value, visi:document.getElementById('pe-visi').value, sejarah:document.getElementById('pe-sejarah').value };
+  await sb.from('profil_desa').update(update).eq('slug',DESA_SLUG);
+  Object.assign(PROFIL, update); showToast('✅ Profil disimpan!');
+}
+async function simpanStatistik() {
+  const update = { jumlah_penduduk:+document.getElementById('se-pend').value, laki_laki:+document.getElementById('se-laki').value, perempuan:+document.getElementById('se-pere').value, jumlah_kk:+document.getElementById('se-kk').value, jumlah_rumah:+document.getElementById('se-rumah').value, jumlah_rt:+document.getElementById('se-rt').value };
+  await sb.from('statistik_desa').update(update).eq('desa_slug',DESA_SLUG);
+  Object.assign(STATISTIK, update); showToast('✅ Statistik disimpan!');
+}
+async function simpanIDM() {
+  const data = { desa_slug:DESA_SLUG, tahun:+document.getElementById('ie-tahun').value, skor:+document.getElementById('ie-skor').value, status:document.getElementById('ie-status').value, iks:+document.getElementById('ie-iks').value, ike:+document.getElementById('ie-ike').value, ikl:+document.getElementById('ie-ikl').value };
+  await sb.from('idm_desa').upsert(data, { onConflict:'desa_slug,tahun' });
+  const { data: idm } = await sb.from('idm_desa').select('*').eq('desa_slug',DESA_SLUG).order('tahun',{ascending:false});
+  IDM_DATA = idm; showToast('✅ IDM disimpan!');
+}
+async function updatePengaduan(id, status) {
+  await sb.from('pengaduan').update({ status }).eq('id',id);
+  adminMenu('pengaduan-admin',null); showToast(`✅ Status → ${status}`);
+}
+
+// ============================================================
+// MODAL & TOAST
+// ============================================================
+function showModal(){document.getElementById('modal-overlay').classList.add('show')}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('show')}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000)}
+
+// ============================================================
+// INIT
+// ============================================================
+initDesa();
+</script>
+</body>
+</html>
